@@ -55,6 +55,6 @@ pub async fn connect(mut controller: WifiController<'static>) {
 }
 
 #[task]
-pub async fn run_network(stack: &'static mut Stack<WifiDevice<'static,WifiStaDevice>> ) {
+pub async fn run_network(stack: &'static Stack<WifiDevice<'static,WifiStaDevice>> ) {
     stack.run().await;
 }
