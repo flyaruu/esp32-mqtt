@@ -38,9 +38,8 @@ pub async fn send_mqtt(
 
         let dns_socket = DnsSocket::new(stack);
         let ip = loop {
-            match dns_socket.get_host_by_name(host, AddrType::Either).await {
-                Ok(ip) => break ip,
-                Err(_) => {}
+            if let Ok(ip) = dns_socket.get_host_by_name(host, AddrType::Either).await {
+                break ip
             }
             info!("failed dns, retrying");
             Timer::after_secs(1).await;
@@ -48,8 +47,8 @@ pub async fn send_mqtt(
         let socket_address = SocketAddr::new(ip, 1883);
 
         info!("Resolved to address: {:?}", socket_address);
-        let mut tcp_state: TcpClientState<5, 1024, 1024> = TcpClientState::new();
-        let tcp_client = TcpClient::new(stack, &mut tcp_state);
+        let tcp_state: TcpClientState<5, 1024, 1024> = TcpClientState::new();
+        let tcp_client = TcpClient::new(stack, &tcp_state);
 
         let tcp_connection = tcp_client.connect(socket_address).await.unwrap();
 
