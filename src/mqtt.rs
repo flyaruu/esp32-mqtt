@@ -39,7 +39,7 @@ pub async fn send_mqtt(
         let dns_socket = DnsSocket::new(stack);
         let ip = loop {
             if let Ok(ip) = dns_socket.get_host_by_name(host, AddrType::Either).await {
-                break ip
+                break ip;
             }
             info!("failed dns, retrying");
             Timer::after_secs(1).await;
