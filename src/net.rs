@@ -7,8 +7,8 @@ use esp_wifi::wifi::{
 };
 use log::info;
 
-const SSID: &str = env!("SSID");
-const PASSWORD: &str = env!("PASSWORD");
+const SSID: Option<&str> = option_env!("SSID");
+const PASSWORD: Option<&str> = option_env!("PASSWORD");
 
 #[task]
 pub async fn connect(mut controller: WifiController<'static>) {
@@ -34,8 +34,8 @@ pub async fn connect(mut controller: WifiController<'static>) {
         match state {
             WifiState::Invalid | WifiState::StaStopped => {
                 let client_config = Configuration::Client(ClientConfiguration {
-                    ssid: SSID.try_into().unwrap(),
-                    password: PASSWORD.try_into().unwrap(),
+                    ssid: SSID.unwrap_or("").try_into().unwrap(),
+                    password: PASSWORD.unwrap_or("").try_into().unwrap(),
                     ..Default::default()
                 });
                 controller.set_configuration(&client_config).unwrap();
