@@ -17,9 +17,10 @@ use esp_wifi::{initialize, wifi::{new_with_mode, WifiStaDevice}, EspWifiInitFor}
 use esp_hal::{systimer::SystemTimer, Rng};
 use net::run_network;
 
-use crate::net::connect;
+use crate::{mqtt::send_mqtt_message, net::connect};
 
 mod net;
+mod mqtt;
 
 
 #[global_allocator]
@@ -70,16 +71,9 @@ fn main() -> ! {
     let timer_group = TimerGroup::new(peripherals.TIMG0, &clocks);
     embassy::init(&clocks,timer_group);
     executor.run(|spawner| {
-        spawner.spawn(print_stuff()).unwrap();
         spawner.spawn(connect(controller)).unwrap();
         spawner.spawn(run_network(stack)).unwrap();
+        spawner.spawn(send_mqtt_message(stack)).unwrap();
     })
 }
 
-#[task]
-async fn print_stuff() {
-    loop {
-        println!("Hello!");
-        Timer::after_secs(1).await;        
-    }
-}
