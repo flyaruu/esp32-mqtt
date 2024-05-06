@@ -36,6 +36,8 @@ embassy-time = "0.3.0"
 embassy-net = { version = "0.4.0", features = ["dhcpv4", "dns", "medium-ip", "medium-ethernet", "tcp", "udp"] }
 embedded-nal-async = "0.7.1"
 rust-mqtt = { version = "0.3.0", default-features = false }
+embassy-sync = "0.5.0"
+embassy-futures = "0.1.1"
 [profile.dev]
 # Rust debug is too slow. 
 # For debug builds always builds with some optimization
