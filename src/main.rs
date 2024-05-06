@@ -3,17 +3,31 @@
 #![feature(type_alias_impl_trait)]
 
 extern crate alloc;
-use core::{mem::MaybeUninit, str::from_utf8};
 use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
+use core::{mem::MaybeUninit, str::from_utf8};
 use embassy_executor::task;
 use embassy_net::{Config, Stack, StackResources};
-use embassy_sync::{blocking_mutex::raw::NoopRawMutex, channel::{Channel, Receiver, Sender}};
+use embassy_sync::{
+    blocking_mutex::raw::NoopRawMutex,
+    channel::{Channel, Receiver, Sender},
+};
 use embassy_time::Timer;
 use esp_backtrace as _;
-use esp_hal::{clock::ClockControl, embassy::{self, executor::Executor}, peripherals::Peripherals, prelude::*, timer::TimerGroup, Delay};
+use esp_hal::{
+    clock::ClockControl,
+    embassy::{self, executor::Executor},
+    peripherals::Peripherals,
+    prelude::*,
+    timer::TimerGroup,
+    Delay,
+};
 use esp_println::println;
 
-use esp_wifi::{initialize, wifi::{new_with_mode, WifiStaDevice}, EspWifiInitFor};
+use esp_wifi::{
+    initialize,
+    wifi::{new_with_mode, WifiStaDevice},
+    EspWifiInitFor,
+};
 
 use esp_hal::{systimer::SystemTimer, Rng};
 use log::info;
@@ -21,9 +35,8 @@ use net::run_network;
 
 use crate::{mqtt::send_mqtt_message, net::connect};
 
-mod net;
 mod mqtt;
-
+mod net;
 
 #[global_allocator]
 static ALLOCATOR: esp_alloc::EspHeap = esp_alloc::EspHeap::empty();
@@ -37,7 +50,7 @@ fn init_heap() {
     }
 }
 
-type Message = (String,Vec<u8>);
+type Message = (String, Vec<u8>);
 
 #[entry]
 fn main() -> ! {
@@ -64,46 +77,62 @@ fn main() -> ! {
         &clocks,
     )
     .unwrap();
-    let wifi =  peripherals.WIFI;
-    let (device,controller) = new_with_mode(&init, wifi, WifiStaDevice).unwrap();
+    let wifi = peripherals.WIFI;
+    let (device, controller) = new_with_mode(&init, wifi, WifiStaDevice).unwrap();
     let dhcpconfig = Config::dhcpv4(Default::default());
     let stack_resource = Box::leak(Box::new(StackResources::<5>::new()));
-    let stack = Stack::new(device,dhcpconfig,stack_resource,3845834);
+    let stack = Stack::new(device, dhcpconfig, stack_resource, 3845834);
 
     let stack = Box::leak(Box::new(stack));
-    
+
     let executor = Box::leak(Box::new(Executor::new()));
     let timer_group = TimerGroup::new(peripherals.TIMG0, &clocks);
 
-    let outbox_channel: Channel<NoopRawMutex,Message,5> = Channel::new();
+    let outbox_channel: Channel<NoopRawMutex, Message, 5> = Channel::new();
     let outbox_channel = Box::leak(Box::new(outbox_channel));
-    let inbox_channel: Channel<NoopRawMutex,Message,5> = Channel::new();
+    let inbox_channel: Channel<NoopRawMutex, Message, 5> = Channel::new();
     let inbox_channel = Box::leak(Box::new(inbox_channel));
 
-    embassy::init(&clocks,timer_group);
+    embassy::init(&clocks, timer_group);
     executor.run(|spawner| {
         spawner.spawn(connect(controller)).unwrap();
         spawner.spawn(run_network(stack)).unwrap();
-        spawner.spawn(send_mqtt_message(stack, outbox_channel.receiver(), inbox_channel.sender())).unwrap();
-        spawner.spawn(read_sensor_data(outbox_channel.sender(), inbox_channel.receiver())).unwrap();
+        spawner
+            .spawn(send_mqtt_message(
+                stack,
+                outbox_channel.receiver(),
+                inbox_channel.sender(),
+            ))
+            .unwrap();
+        spawner
+            .spawn(read_sensor_data(
+                outbox_channel.sender(),
+                inbox_channel.receiver(),
+            ))
+            .unwrap();
     })
 }
 
 #[task]
-async fn read_sensor_data(sender: Sender<'static, NoopRawMutex,Message,5>, config_receiver: Receiver<'static, NoopRawMutex,Message,5>)->! {
+async fn read_sensor_data(
+    sender: Sender<'static, NoopRawMutex, Message, 5>,
+    config_receiver: Receiver<'static, NoopRawMutex, Message, 5>,
+) -> ! {
     let mut delay = 5_u64;
     loop {
         match config_receiver.try_receive() {
-            Ok((_,payload)) => {
-                delay = u64::from_str_radix(from_utf8(&payload).unwrap(),10).unwrap_or(5);
-            },
-            Err(_) => {},
+            Ok((_, payload)) => {
+                delay = u64::from_str_radix(from_utf8(&payload).unwrap(), 10).unwrap_or(5);
+            }
+            Err(_) => {}
         }
         // read sensor
         // send to mqtt
         // delay a bit
-        sender.send(("esp32_test_topic".to_owned(),"abc".as_bytes().to_vec())).await;
+        sender
+            .send(("esp32_test_topic".to_owned(), "abc".as_bytes().to_vec()))
+            .await;
         info!("Sending from sensor");
         Timer::after_secs(delay).await;
-    }    
+    }
 }
