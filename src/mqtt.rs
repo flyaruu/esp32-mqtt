@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned, format};
+use alloc::borrow::ToOwned;
 use embassy_executor::task;
 use embassy_futures::select::{select, Either};
 use embassy_net::{
@@ -32,7 +32,6 @@ pub async fn send_mqtt_message(
     receiver: Receiver<'static, NoopRawMutex, Message, 5>,
     sender: Sender<'static, NoopRawMutex, Message, 5>,
 ) -> ! {
-    let mut counter = 0;
     loop {
         if !stack.is_link_up() {
             Timer::after_millis(500).await;
@@ -47,8 +46,8 @@ pub async fn send_mqtt_message(
             }
             Timer::after_millis(500).await;
         };
-        let mut state: TcpClientState<3, BUFFER_SIZE, BUFFER_SIZE> = TcpClientState::new();
-        let tcp_client = TcpClient::new(stack, &mut state);
+        let state: TcpClientState<3, BUFFER_SIZE, BUFFER_SIZE> = TcpClientState::new();
+        let tcp_client = TcpClient::new(stack, &state);
 
         let tcp_connection = tcp_client.connect(SocketAddr::new(ip, 1883)).await.unwrap();
         // send message

@@ -19,7 +19,6 @@ use esp_hal::{
     peripherals::Peripherals,
     prelude::*,
     timer::TimerGroup,
-    Delay,
 };
 use esp_println::println;
 
@@ -59,7 +58,6 @@ fn main() -> ! {
     let system = peripherals.SYSTEM.split();
 
     let clocks = ClockControl::max(system.clock_control).freeze();
-    let mut delay = Delay::new(&clocks);
 
     // setup logger
     // To change the log_level change the env section in .cargo/config.toml
@@ -120,15 +118,9 @@ async fn read_sensor_data(
 ) -> ! {
     let mut delay = 5_u64;
     loop {
-        match config_receiver.try_receive() {
-            Ok((_, payload)) => {
-                delay = u64::from_str_radix(from_utf8(&payload).unwrap(), 10).unwrap_or(5);
-            }
-            Err(_) => {}
+        if let Ok((_, payload)) = config_receiver.try_receive() {
+            delay = from_utf8(&payload).unwrap().parse::<u64>().unwrap_or(5);
         }
-        // read sensor
-        // send to mqtt
-        // delay a bit
         sender
             .send(("esp32_test_topic".to_owned(), "abc".as_bytes().to_vec()))
             .await;
