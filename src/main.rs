@@ -14,7 +14,7 @@ use embassy_sync::{
 };
 use embassy_time::Timer;
 use esp_backtrace as _;
-use esp_hal::{clock::ClockControl, peripherals::Peripherals, rng::Rng, system::SystemControl, timer::{systimer::SystemTimer, timg::TimerGroup}};
+use esp_hal::{clock::ClockControl, entry, peripherals::Peripherals, rng::Rng, system::SystemControl, timer::{systimer::SystemTimer, timg::TimerGroup}};
 use esp_println::println;
 
 use esp_wifi::{
@@ -45,6 +45,7 @@ fn init_heap() {
 
 type Message = (String, Vec<u8>);
 
+#[entry]
 fn main() -> ! {
     init_heap();
     let peripherals = Peripherals::take();

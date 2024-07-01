@@ -655,7 +655,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "esp32-mqtt"
+name = "esp18-embassy-test"
 version = "0.1.0"
 dependencies = [
  "embassy-executor",
@@ -663,6 +663,7 @@ dependencies = [
  "embassy-net",
  "embassy-sync 0.6.0",
  "embassy-time",
+ "embedded-hal 1.0.0",
  "embedded-io",
  "embedded-nal-async",
  "embedded-svc",
