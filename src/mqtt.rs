@@ -14,7 +14,13 @@ use embassy_time::Timer;
 use embedded_nal_async::{AddrType, Dns, SocketAddr, TcpConnect};
 use esp_wifi::wifi::{WifiDevice, WifiStaDevice};
 use log::info;
-use rust_mqtt::{client::{client::MqttClient, client_config::{ClientConfig, MqttVersion}}, utils::rng_generator::CountingRng};
+use rust_mqtt::{
+    client::{
+        client::MqttClient,
+        client_config::{ClientConfig, MqttVersion},
+    },
+    utils::rng_generator::CountingRng,
+};
 // use rust_mqtt::{
 //     client::{
 //         client::MqttClient,
@@ -78,7 +84,6 @@ pub async fn send_mqtt_message(
                     .send_message(
                         &topic,
                         &payload,
-                        
                         rust_mqtt::packet::v5::publish_packet::QualityOfService::QoS1,
                         false,
                     )

@@ -4,7 +4,6 @@
 
 extern crate alloc;
 use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
-use esp_hal_embassy::Executor;
 use core::{mem::MaybeUninit, str::from_utf8};
 use embassy_executor::task;
 use embassy_net::{Config, Stack, StackResources};
@@ -14,7 +13,15 @@ use embassy_sync::{
 };
 use embassy_time::Timer;
 use esp_backtrace as _;
-use esp_hal::{clock::ClockControl, entry, peripherals::Peripherals, rng::Rng, system::SystemControl, timer::{systimer::SystemTimer, timg::TimerGroup}};
+use esp_hal::{
+    clock::ClockControl,
+    entry,
+    peripherals::Peripherals,
+    rng::Rng,
+    system::SystemControl,
+    timer::{systimer::SystemTimer, timg::TimerGroup},
+};
+use esp_hal_embassy::Executor;
 use esp_println::println;
 
 use esp_wifi::{
