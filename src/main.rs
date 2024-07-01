@@ -4,6 +4,7 @@
 
 extern crate alloc;
 use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
+use esp_hal_embassy::Executor;
 use core::{mem::MaybeUninit, str::from_utf8};
 use embassy_executor::task;
 use embassy_net::{Config, Stack, StackResources};
@@ -13,13 +14,7 @@ use embassy_sync::{
 };
 use embassy_time::Timer;
 use esp_backtrace as _;
-use esp_hal::{
-    clock::ClockControl,
-    embassy::{self, executor::Executor},
-    peripherals::Peripherals,
-    prelude::*,
-    timer::TimerGroup,
-};
+use esp_hal::{clock::ClockControl, peripherals::Peripherals, rng::Rng, system::SystemControl, timer::{systimer::SystemTimer, timg::TimerGroup}};
 use esp_println::println;
 
 use esp_wifi::{
@@ -28,7 +23,6 @@ use esp_wifi::{
     EspWifiInitFor,
 };
 
-use esp_hal::{systimer::SystemTimer, Rng};
 use log::info;
 use net::run_network;
 
@@ -51,12 +45,10 @@ fn init_heap() {
 
 type Message = (String, Vec<u8>);
 
-#[entry]
 fn main() -> ! {
     init_heap();
     let peripherals = Peripherals::take();
-    let system = peripherals.SYSTEM.split();
-
+    let system = SystemControl::new(peripherals.SYSTEM);
     let clocks = ClockControl::max(system.clock_control).freeze();
 
     // setup logger
@@ -71,7 +63,7 @@ fn main() -> ! {
         EspWifiInitFor::Wifi,
         timer,
         Rng::new(peripherals.RNG),
-        system.radio_clock_control,
+        peripherals.RADIO_CLK,
         &clocks,
     )
     .unwrap();
@@ -84,14 +76,13 @@ fn main() -> ! {
     let stack = Box::leak(Box::new(stack));
 
     let executor = Box::leak(Box::new(Executor::new()));
-    let timer_group = TimerGroup::new(peripherals.TIMG0, &clocks);
+    let timer_group = TimerGroup::new_async(peripherals.TIMG0, &clocks);
 
     let outbox_channel: Channel<NoopRawMutex, Message, 5> = Channel::new();
     let outbox_channel = Box::leak(Box::new(outbox_channel));
     let inbox_channel: Channel<NoopRawMutex, Message, 5> = Channel::new();
     let inbox_channel = Box::leak(Box::new(inbox_channel));
-
-    embassy::init(&clocks, timer_group);
+    esp_hal_embassy::init(&clocks, timer_group);
     executor.run(|spawner| {
         spawner.spawn(connect(controller)).unwrap();
         spawner.spawn(run_network(stack)).unwrap();

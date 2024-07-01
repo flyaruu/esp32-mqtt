@@ -11,6 +11,12 @@ const SSID: &str = env!("SSID");
 const PASSWORD: &str = env!("PASSWORD");
 
 #[task]
+pub async fn thing() {
+
+}
+
+
+#[task]
 pub async fn connect(mut controller: WifiController<'static>) {
     loop {
         let state = get_wifi_state();
