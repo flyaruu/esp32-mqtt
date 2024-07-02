@@ -14,7 +14,7 @@ const PASSWORD: &str = env!("PASSWORD");
 pub async fn connect(mut controller: WifiController<'static>) {
     loop {
         let state = get_wifi_state();
-        info!("Current state: {:?}", state);
+        info!("Before state: {:?}", state);
         match state {
             esp_wifi::wifi::WifiState::StaConnected => {
                 info!("connected");
@@ -29,7 +29,7 @@ pub async fn connect(mut controller: WifiController<'static>) {
             _ => {}
         }
         let state = get_wifi_state();
-        info!("Current state: {:?}", state);
+        info!("After state: {:?}", state);
         match state {
             WifiState::Invalid | WifiState::StaStopped => {
                 let client_config = Configuration::Client(ClientConfiguration {

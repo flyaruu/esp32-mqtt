@@ -4,6 +4,7 @@
 
 extern crate alloc;
 use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
+use embedded_tls::{TlsConfig, TlsConnection};
 use core::{mem::MaybeUninit, str::from_utf8};
 use embassy_executor::task;
 use embassy_net::{Config, Stack, StackResources};
@@ -64,17 +65,18 @@ fn main() -> ! {
     // or remove it and set ESP_LOGLEVEL manually before running cargo run
     // this requires a clean rebuild because of https://github.com/rust-lang/cargo/issues/10358
     esp_println::logger::init_logger_from_env();
-    log::info!("Logger is setup");
-    println!("Hello world!");
     let timer = SystemTimer::new(peripherals.SYSTIMER).alarm0;
+    let wifi_rng = Rng::new(peripherals.RNG);
+    let tls_rng = wifi_rng.clone();
     let init = initialize(
         EspWifiInitFor::Wifi,
         timer,
-        Rng::new(peripherals.RNG),
+        wifi_rng,
         peripherals.RADIO_CLK,
         &clocks,
     )
     .unwrap();
+
     let wifi = peripherals.WIFI;
     let (device, controller) = new_with_mode(&init, wifi, WifiStaDevice).unwrap();
     let dhcpconfig = Config::dhcpv4(Default::default());
@@ -82,6 +84,8 @@ fn main() -> ! {
     let stack = Stack::new(device, dhcpconfig, stack_resource, 3845834);
 
     let stack = Box::leak(Box::new(stack));
+
+
 
     let executor = Box::leak(Box::new(Executor::new()));
     let timer_group = TimerGroup::new_async(peripherals.TIMG0, &clocks);
@@ -99,6 +103,7 @@ fn main() -> ! {
                 stack,
                 outbox_channel.receiver(),
                 inbox_channel.sender(),
+                tls_rng,
             ))
             .unwrap();
         spawner
